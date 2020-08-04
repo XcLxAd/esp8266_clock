@@ -85,13 +85,17 @@ String h;   // часы
 String m;   // минуты
 String s;   // секунды
 uint8_t second;
+uint8_t hour;
+uint8_t minute;
+bool AskNTPTime = false;
+
+
 
 /**
  * 
  */
 void displayTime() {
   if (P.displayAnimate()) { //о том что анимация закончена функция displayAnimate() сообщает переходом в значение TRUE
-    //P.setFont(_6bite_rus);
     Text.toCharArray(buf, 256);
     P.displayText(buf, PA_CENTER, 200, 0, PA_PRINT, PA_NO_EFFECT); //(Текст для вывода, выравнивание текста, скорость, задержка показа, эффект появления, эффект исчезновения)
     if (!(second % 30)) disp = 1;     
@@ -144,33 +148,60 @@ void displayScroll() {
 void getTime() {
   time_t now = time(nullptr);
   const struct tm * timeinfo = localtime(&now);
- 
-  h = String (timeinfo->tm_hour/10) + String (timeinfo->tm_hour%10);
-  m = String (timeinfo->tm_min/10) + String (timeinfo->tm_min%10);
-  s = String (timeinfo->tm_sec/10 + String (timeinfo->tm_sec%10));
+  
+  minute = timeinfo->tm_min;
+  hour = timeinfo->tm_hour;
   second = timeinfo->tm_sec;
+  
+  h = String (hour/10) + String (hour%10);
+  m = String (minute/10) + String (minute%10);
+  s = String (second/10 + String (second%10));
   md = String (timeinfo->tm_mday);
   y = String (timeinfo->tm_year + 1900);
-  if (timeinfo->tm_mon + 1 == 1) mon = "января";
-  if (timeinfo->tm_mon + 1 == 2) mon = "февраля";
-  if (timeinfo->tm_mon + 1 == 3) mon = "марта";
-  if (timeinfo->tm_mon + 1 == 4) mon = "апреля";
-  if (timeinfo->tm_mon + 1 == 5) mon = "мая";
-  if (timeinfo->tm_mon + 1 == 6) mon = "июня";
-  if (timeinfo->tm_mon + 1 == 7) mon = "июля";
-  if (timeinfo->tm_mon + 1 == 8) mon = "августа";
-  if (timeinfo->tm_mon + 1 == 9) mon = "сентября";
-  if (timeinfo->tm_mon + 1 == 10) mon = "октября";
-  if (timeinfo->tm_mon + 1 == 11) mon = "ноября";
-  if (timeinfo->tm_mon + 1 == 12) mon = "декабря";
+  
+  switch(timeinfo->tm_mon) {  // месяц [ 0-январь - 11-декабрь ]
+    case 0: 
+      mon = "января"; break;
+    case 1:
+      mon = "февраля"; break;
+    case 2:
+      mon = "марта"; break;
+    case 3:
+      mon = "апреля"; break;
+    case 4:
+      mon = "мая"; break;
+    case 5:
+      mon = "июня"; break;
+    case 6:
+      mon = "июля"; break;
+    case 7:
+      mon = "августа"; break;
+    case 8:
+      mon = "сентября"; break;
+    case 9:
+      mon = "октября"; break;
+    case 10:
+      mon = "ноября"; break;
+    case 11:
+      mon = "декабря"; break;
+  }
 
-  if (timeinfo->tm_wday == 1) wd = "понедельник";
-  if (timeinfo->tm_wday == 2) wd = "вторник";
-  if (timeinfo->tm_wday == 3) wd = "среда";
-  if (timeinfo->tm_wday == 4) wd = "четверг";
-  if (timeinfo->tm_wday == 5) wd = "пятница";
-  if (timeinfo->tm_wday == 6) wd = "суббота";
-  if (timeinfo->tm_wday == 7) wd = "воскресенье";
+  switch(timeinfo->tm_wday) { // день недели [ 0-воскресенье - 6-суббота ]
+    case 0:
+      wd = "воскресенье"; break;  
+    case 1:
+      wd = "понедельник"; break;
+    case 2:
+      wd = "вторник"; break;
+    case 3:
+      wd = "среда"; break;
+    case 4:
+      wd = "четверг"; break;
+    case 5:
+      wd = "пятница"; break;
+    case 6:
+      wd = "суббота"; break;
+  }
 }
 
 /**
@@ -229,8 +260,6 @@ void setup() {
  */
   P.begin();
   P.setInvert(false);
-  
-  
 
   String ipAddress = WiFi.localIP().toString(); // получаем ip адрес в виде String 
   ipAddress.toCharArray(ipAddressChr, 16); // преобразуем ip адрес из string в CharArray
@@ -238,7 +267,6 @@ void setup() {
   P.displayAnimate();
   Text = ipAddressChr;
   displayScroll();
-  //P.displayScroll(ipAddressChr, PA_LEFT, PA_SCROLL_LEFT, 25); // вывод бегущей строки с ip адресом
 /**
  * 
  */
@@ -252,13 +280,17 @@ void setup() {
 
 void loop() {
   ArduinoOTA.handle();
+  
+  if (hour == 0 && minute == 0 && second == 0) sntp_init();
+
   getTime();
+
   if (disp == 0) {     
     if (second & 1) Text = h + ":" + m;
     else Text = h + " " + m;
     if (startT) displayTimeStart();
     else displayTime();
- }
+  }
   if (disp == 1) {
     if (endT) {
       if (second & 1) Text = h + ":" + m;
@@ -269,5 +301,5 @@ void loop() {
       Text = wd + " " + md + " " + mon + " " + y + "г";
       displayScroll();
     }
-  }   
+  }
 }
