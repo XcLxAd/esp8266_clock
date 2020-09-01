@@ -26,8 +26,8 @@
 #define MYTZ TZ_Europe_Moscow
 // установка имени и пароля точки доступа 
 #ifndef STASSID
-  #define STASSID "Home_Network"
-  #define STAPSK  "5VjK-8ePo-aysa-mkyr-567-bhd"
+  #define STASSID "SSID"
+  #define STAPSK  "PASS"
 #endif
 
 // установки индикации
@@ -166,9 +166,9 @@ uint8_t minute;
  */ 
 HTTPClient http;  // создаем экземпляр класса HttpClient
 std::string server = "https://api.climacell.co/v3/weather/realtime";
-const float_t lat     = 45.855;
-const float_t lon     = 40.125;
-String apiKey  = "NLOXCpsbWaf689MVyFuKZSrBpNJBesm1";
+const float_t lat     = 0;
+const float_t lon     = 0;
+String apiKey  = "apiKey";
 
 
 String temp;
