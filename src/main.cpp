@@ -26,8 +26,8 @@
 #define MYTZ TZ_Europe_Moscow
 // установка имени и пароля точки доступа 
 #ifndef STASSID
-  #define STASSID "SSID"
-  #define STAPSK  "PASS"
+  #define STASSID ""
+  #define STAPSK  ""
 #endif
 
 // установки индикации
@@ -61,46 +61,46 @@ struct sCatalog {
 };
 
 sCatalog catalog[] = { 
-    { PA_SCROLL_UP, 5 },
-    { PA_SCROLL_DOWN, 5 },
-    { PA_SCROLL_LEFT, 5 },
-    { PA_SCROLL_RIGHT, 5, },
+    { PA_SCROLL_UP,         5 },
+    { PA_SCROLL_DOWN,       5 },
+    { PA_SCROLL_LEFT,       5 },
+    { PA_SCROLL_RIGHT,      5 },
   #if ENA_SPRITE
-    { PA_SPRITE, 5 },
+    { PA_SPRITE,            5 },
   #endif
   #if ENA_MISC
-    { PA_SLICE, 1 },
-    { PA_MESH, 20 },
-    { PA_FADE, 20 },
-    { PA_DISSOLVE, 7 },
-    { PA_BLINDS, 7 },
-    { PA_RANDOM, 3 },
+    { PA_SLICE,             1 },
+    { PA_MESH,              20 },
+    { PA_FADE,              20 },
+    { PA_DISSOLVE,          7 },
+    { PA_BLINDS,            7 },
+    { PA_RANDOM,            3 },
   #endif    
   #if ENA_WIPE
-    { PA_WIPE, 5 },
-    { PA_WIPE_CURSOR, 4 },
+    { PA_WIPE,              5 },
+    { PA_WIPE_CURSOR,       4 },
   #endif
   #if ENA_SCAN
-    { PA_SCAN_HORIZ, 4 },
-    { PA_SCAN_HORIZX, 4 },
-    { PA_SCAN_VERT, 3 },
-    { PA_SCAN_VERTX, 3 },
+    { PA_SCAN_HORIZ,        4 },
+    { PA_SCAN_HORIZX,       4 },
+    { PA_SCAN_VERT,         3 },
+    { PA_SCAN_VERTX,        3 },
   #endif  
 #if ENA_OPNCLS
-    { PA_OPENING, 3 },
-    { PA_OPENING_CURSOR, 4 },
-    { PA_CLOSING, 3 },
-    { PA_CLOSING_CURSOR, 4 },
+    { PA_OPENING,           3 },
+    { PA_OPENING_CURSOR,    4 },
+    { PA_CLOSING,           3 },
+    { PA_CLOSING_CURSOR,    4 },
 #endif
 #if ENA_SCR_DIA
-    { PA_SCROLL_UP_LEFT, 7 },
-    { PA_SCROLL_UP_RIGHT, 7 },
-    { PA_SCROLL_DOWN_LEFT, 7 },
+    { PA_SCROLL_UP_LEFT,    7 },
+    { PA_SCROLL_UP_RIGHT,   7 },
+    { PA_SCROLL_DOWN_LEFT,  7 },
     { PA_SCROLL_DOWN_RIGHT, 7 },
 #endif
 #if ENA_GROW
-    { PA_GROW_UP, 7 },
-    { PA_GROW_DOWN, 7 },
+    { PA_GROW_UP,           7 },
+    { PA_GROW_DOWN,         7 },
 #endif
 };
 
@@ -144,11 +144,10 @@ static std::stringstream apiURL; // создаем строчный потоко
  */
 int rnd;
 bool fStartScrollAnimation = 0; // флаг старта бегущей строки НЕ активен
-bool fStartAnimationTime = 1; // флаг анимации старта времени Активен
-bool fEndAnimationTime = 1; // флаг анимации завершения времени Активен
-
 String Text;
 char buf[256];
+int cntDispScrollAnimation = 0;
+int cntTextScroll = 0;
 
 String y;   // год
 String mon; // месяц
@@ -168,7 +167,7 @@ HTTPClient http;  // создаем экземпляр класса HttpClient
 std::string server = "https://api.climacell.co/v3/weather/realtime";
 const float_t lat     = 0;
 const float_t lon     = 0;
-String apiKey  = "apiKey";
+String apiKey  = "";
 
 
 String temp;
@@ -222,55 +221,60 @@ void getWeatherData() {
   }
 }
 
-
-
-
-
-
  // индикация времени
 void displayTime() {
   if (P.displayAnimate()) { // если анимация закончена
     P.setFont(_6bite_rus);
-    P.displayText(Text.c_str(), PA_CENTER, 200, 0, PA_PRINT, PA_NO_EFFECT);
-    if (!(second % 55) && !(hour == 7)) fStartScrollAnimation = 1;  // каждые nn секунд устанавливаем флаг анимации бегущей строки      
+    Text.toCharArray(buf, 256);
+    P.displayText(buf, PA_CENTER, 10, 10, PA_PRINT, PA_NO_EFFECT);      
   }
 }
 
  // старт анимации времени 
 void displayTimeStart() {
-  if (P.displayAnimate()) { // если анимация закончена
-    rnd = random(0, ARRAY_SIZE(catalog));
+  if (P.displayAnimate()) { // если анимация закончена    
     P.setFont(_6bite_rus);
     Text.toCharArray(buf, 256);
-    P.displayText(buf, PA_CENTER, catalog[rnd].speed, 0, catalog[rnd].effect, PA_NO_EFFECT);
-    fStartAnimationTime = 0; // флаг анимации старта времени НЕ активен
-    fEndAnimationTime = 1; // флаг анимации завершения времени Активен
-    if (!(second % 55) && !(hour == 7)) fStartScrollAnimation = 1; // каждые nn секунд устанавливаем флаг анимации бегущей строки  
+    P.displayText(buf, PA_CENTER, catalog[rnd].speed, 50, catalog[rnd].effect, PA_NO_EFFECT);
+    if (!P.displayAnimate()) cntDispScrollAnimation = 0; fStartScrollAnimation = 0;
   }
 }
 
  // завершение анимации времени
 void displayTimeEnd() {
-  if (P.displayAnimate()) { // если анимация закончена
-    rnd = random(0, ARRAY_SIZE(catalog));
+  if (P.displayAnimate()) { // если анимация закончена    
     P.setFont(_6bite_rus);
     Text.toCharArray(buf, 256);
-    P.displayText(buf, PA_CENTER, catalog[rnd].speed, 0, PA_PRINT, catalog[rnd].effect); // выводим завершение анимации
-    fEndAnimationTime = 0; // флаг анимации завершения времени НЕ активен
-   }
+    P.displayText(buf, PA_CENTER, catalog[rnd].speed, 50, PA_PRINT, catalog[rnd].effect); // выводим завершение анимации
+    if (!P.displayAnimate()) cntDispScrollAnimation = 1;
+  }
 }
 
  // вывод бегущей строки
 void displayScroll() {
   if (P.displayAnimate()) { // если анимация закончена
     P.setFont(_5bite_rus);
-    Text.toCharArray(buf, 256);
-    P.displayScroll(buf, PA_LEFT, PA_SCROLL_LEFT, 30); 
-    fStartScrollAnimation = 0; // флаг старта бегущей строки НЕ активен
-    fStartAnimationTime = 1; // флаг анимации старта времени Активен
+    Text.toCharArray(buf, 256);    
+    P.displayScroll(buf, PA_LEFT, PA_SCROLL_LEFT, 30);
   }
 }
 
+
+ // вывод бегущей строки в цикле
+void displayScrollInCycle(int n) {
+  if (P.displayAnimate()) { // если анимация закончена
+    P.setFont(_5bite_rus);
+    Text.toCharArray(buf, 256);    
+    P.displayScroll(buf, PA_LEFT, PA_SCROLL_LEFT, 30);
+    if (!P.displayAnimate()) cntDispScrollAnimation = 2; cntTextScroll = n;
+  }
+}
+
+
+void displayDotsTimeAnimation() {
+  if (second & 1) Text = h + "\x0c3" + m;
+  else Text = h + "\x0c2" + m;
+}
 
 
 /**
@@ -427,6 +431,7 @@ void loop() {
   // 3 раза в час запрос погоды
   if (minute > 0 && !(minute % 19) && second == 20 && getW == 0) {
     getWeatherData();
+    delay(100);
     getW = 1;
   } 
   else getW = 0;
@@ -435,26 +440,31 @@ void loop() {
   getTime();
  
   // индикация
-  if (second & 1) Text = h + ":" + m;
-  else Text = h + " " + m;
+
+  if (second > 0 && !(second % 35) && fStartScrollAnimation == 0) fStartScrollAnimation = 1;
   
-  if (fStartScrollAnimation) { // если флаг старта анимации бегущей строки активен
-    if (fEndAnimationTime) displayTimeEnd(); // если флаг завершения анимации времени активен запускаем анимацию
-    else { // иначе выводим бегущую строку
-      
-      Text = wd + " " + md + " " + mon + " t = " + temp + "\x0f7" + "C";      
-      displayScroll();
+  if (cntDispScrollAnimation == 0 && fStartScrollAnimation) {
+    displayDotsTimeAnimation();
+    rnd = random(0, ARRAY_SIZE(catalog));
+    displayTimeEnd();
+  }
+  if (cntDispScrollAnimation == 1 && fStartScrollAnimation) {
+    if (cntTextScroll == 0) {
+      Text = wd + " " + md + " " + mon;     
+      displayScrollInCycle(1); 
     }
+    if (cntTextScroll == 1) {
+      Text = "t на улице " + temp + "\x0f7" + "C";      
+      displayScrollInCycle(0); 
+    }         
+  } 
+  if (cntDispScrollAnimation == 2 && fStartScrollAnimation) {
+    displayDotsTimeAnimation();
+    displayTimeStart();
+  }      
+  if (!fStartScrollAnimation) {
+    displayDotsTimeAnimation();
+    displayTime();
   }
-// 
-  else { // если флаг старта анимации бегущей строки НЕ активен
-    if (fStartAnimationTime) displayTimeStart();   // если флаг старта анимации времени активен запускаем анимацию
-    else displayTime(); // иначе выводим время
-  }
-
-
- 
-
-
 
 }
