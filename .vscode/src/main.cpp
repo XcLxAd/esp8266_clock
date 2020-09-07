@@ -170,9 +170,9 @@ uint8_t minute;
  */
 HTTPClient http;  // создаем экземпляр класса HttpClient
 std::string server = "https://api.climacell.co/v3/weather/realtime";
-const float_t lat     = 00.000; // вставьте выши координаты
-const float_t lon     = 00.000; // вставьте выши координаты
-String apiKey  = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"; // вставьте ваш API KEY
+const float_t lat     = 45.855;
+const float_t lon     = 40.125;
+String apiKey  = "NLOXCpsbWaf689MVyFuKZSrBpNJBesm1";
 String temp;
 uint8_t getW = 0;
 /**
