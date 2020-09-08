@@ -170,10 +170,13 @@ uint8_t minute;
  */
 HTTPClient http;  // создаем экземпляр класса HttpClient
 std::string server = "https://api.climacell.co/v3/weather/realtime";
-const float_t lat     = 00.000; // вставьте выши координаты
-const float_t lon     = 00.000; // вставьте выши координаты
-String apiKey  = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"; // вставьте ваш API KEY
-String temp;
+const float_t lat     = 00.000; // ваши координаты
+const float_t lon     = 00.000; // ваши координаты
+String apiKey  = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"; // API Key
+float temp;
+String tempStr;
+String weatherDescription;
+
 uint8_t getW = 0;
 /**
  * преобразование ответа о погоде в данные
@@ -188,6 +191,18 @@ String parseJson(String jsonDoc) {
   String value = doc["temp"]["value"];
   return value;
 }
+
+void convertTemp2WeatherDescription() {  
+  if (temp <= -8) weatherDescription = "сильный мороз";
+  else if (temp > -8 && temp <= -3) weatherDescription = "мороз";
+  else if (temp > -3 && temp <= 0) weatherDescription = "морозно";
+  else if (temp > 0 && temp <= 12) weatherDescription = "холодно";
+  else if (temp > 12 && temp <= 18) weatherDescription = "прохладно";
+  else if (temp > 18 && temp <= 24) weatherDescription = "комфортно";
+  else if (temp > 24 && temp <= 29) weatherDescription = "жарко";
+  else if (temp > 29) weatherDescription = "очень жарко";
+}
+
 
 /**
  * запрос погоды
@@ -227,7 +242,10 @@ void getWeatherData() {
           Serial.print("JSON: ");
           Serial.println(payload);
         #endif       
-        temp = parseJson(payload);
+        String i = parseJson(payload);
+        temp = i.toFloat();
+        tempStr = String(temp, 1);
+        convertTemp2WeatherDescription();
         getW = 1;        
         #ifdef DEBUG
           Serial.print("Temperature = ");
@@ -371,6 +389,9 @@ void getTime() {
   }
 }
 
+
+
+
 /**
  * =======================================================
  * SETUP * SETUP * SETUP * SETUP * SETUP * SETUP * SETUP *
@@ -434,7 +455,7 @@ void setup() {
    */
   P.begin();
   P.setInvert(false);
-  P.setIntensity(10);
+ 
   #ifdef DEBUG
     P.setIntensity(1);
   #endif  
@@ -491,11 +512,13 @@ void loop() {
   if (second > 0 && !(second % 35) && fStartScrollAnimation == 0) fStartScrollAnimation = 1;  //если таймер бегущей строки сработал 
                                                                                               //и при этом флаг старта бегущей строки не установлен, 
                                                                                               // устанавливаем его
-  #ifdef Night_Bbrightness // включение ночного режима яркости
-    if (hour < 6) P.setIntensity(3);
-    else if (hour >= 20) P.setIntensity(8);
-    else P.setIntensity(14);
-  #endif
+  #ifndef DEBUG
+    #ifdef Night_Bbrightness // включение ночного режима яркости
+      if (hour < 6) P.setIntensity(3);
+      else if (hour >= 6 && hour < 20) P.setIntensity (14);
+      else if (hour >= 20 ) P.setIntensity(7);
+    #endif
+  #endif 
   /**
    * смена экранов анимации:
    * флаг старта бегущей строки   1                             0
@@ -518,7 +541,8 @@ void loop() {
       displayScrollInCycle(1);                                // выводим первую бегущую строку 
     }
     if (cntTextScroll == 1) {                                 // при счетчике строк бегущей строки равном 1
-      Text = "t на улице " + temp + "\x0f7" + "C";      
+      
+      Text = "на улице " + weatherDescription + " " + tempStr + "\x0f7" + "C";      
       displayScrollInCycle(0);                                // выводим вторую бегущую строку
                                                               // и т.д.
     }         
