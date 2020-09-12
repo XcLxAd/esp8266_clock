@@ -172,7 +172,7 @@ HTTPClient http;  // создаем экземпляр класса HttpClient
 std::string server = "https://api.climacell.co/v3/weather/realtime";
 const float_t lat     = 00.000; // ваши координаты
 const float_t lon     = 00.000; // ваши координаты
-String apiKey  = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"; // API Key
+String apiKey  = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX";  // ваш apiKey
 float temp;
 String tempStr;
 String weatherDescription;
@@ -198,9 +198,9 @@ void convertTemp2WeatherDescription() {
   else if (temp > -3 && temp <= 0) weatherDescription = "морозно";
   else if (temp > 0 && temp <= 12) weatherDescription = "холодно";
   else if (temp > 12 && temp <= 18) weatherDescription = "прохладно";
-  else if (temp > 18 && temp <= 24) weatherDescription = "комфортно";
-  else if (temp > 24 && temp <= 29) weatherDescription = "жарко";
-  else if (temp > 29) weatherDescription = "очень жарко";
+  else if (temp > 18 && temp <= 26) weatherDescription = "комфортно";
+  else if (temp > 26 && temp <= 32) weatherDescription = "жарко";
+  else if (temp > 32) weatherDescription = "очень жарко";
 }
 
 
