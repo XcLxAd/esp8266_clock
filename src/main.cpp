@@ -12,18 +12,18 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <WiFiClientSecureBearSSL.h>
-/** 
+/**
  * подключение библиотек работы со временем
  */
 #include <sntp.h>
 #include <time.h>
 #include <TZ.h>
-/** 
+/**
  * подключение библиотек работы с матрицей и эффектов
  */
 #include "MD_MAX72xx.h"
 #include "MD_Parola.h"
-/** 
+/**
  * подключение шрифтов
  */
 #include "5bite_rus.h"
@@ -32,7 +32,7 @@
  * включение режима отладки
  */
 //#define DEBUG
-/** 
+/**
  * включение ночного режима
  */
 #define Night_Bbrightness
@@ -73,7 +73,7 @@ struct sCatalog {
   uint16_t speed;       // скорость эффекта
 };
 
-sCatalog catalog[] = { 
+sCatalog catalog[] = {
     { PA_SCROLL_UP,         5 },
     { PA_SCROLL_DOWN,       5 },
     { PA_SCROLL_LEFT,       5 },
@@ -88,7 +88,7 @@ sCatalog catalog[] = {
     { PA_DISSOLVE,          7 },
     { PA_BLINDS,            7 },
     { PA_RANDOM,            3 },
-  #endif    
+  #endif
   #if ENA_WIPE
     { PA_WIPE,              5 },
     { PA_WIPE_CURSOR,       4 },
@@ -98,7 +98,7 @@ sCatalog catalog[] = {
     { PA_SCAN_HORIZX,       4 },
     { PA_SCAN_VERT,         3 },
     { PA_SCAN_VERTX,        3 },
-  #endif  
+  #endif
 #if ENA_OPNCLS
     { PA_OPENING,           3 },
     { PA_OPENING_CURSOR,    4 },
@@ -170,14 +170,30 @@ uint8_t minute;
  */
 HTTPClient http;  // создаем экземпляр класса HttpClient
 std::string server = "https://api.climacell.co/v3/weather/realtime";
-const float_t lat     = 00.000; // ваши координаты
-const float_t lon     = 00.000; // ваши координаты
-String apiKey  = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX";  // ваш apiKey
+const float_t lat     = 45.862272; // ваши координаты
+const float_t lon     = 40.126453; // ваши координаты
+String apiKey  = "NLOXCpsbWaf689MVyFuKZSrBpNJBesm1";  // ваш apiKey
 float temp;
 String tempStr;
 String weatherDescription;
 
 uint8_t getW = 0;
+
+/**
+ * объявление пользовательских функций
+*/
+void getTime();
+String parseJson(String);
+void convertTemp2WeatherDescription();
+void getWeatherData();
+void displayTime();
+void displayTimeStart();
+void displayTimeEnd();
+void displayScroll();
+void displayScrollInCycle(int);
+void displayDotsTimeAnimation();
+
+
 /**
  * преобразование ответа о погоде в данные
  */
@@ -192,7 +208,7 @@ String parseJson(String jsonDoc) {
   return value;
 }
 
-void convertTemp2WeatherDescription() {  
+void convertTemp2WeatherDescription() {
   if (temp <= -8) weatherDescription = "сильный мороз";
   else if (temp > -8 && temp <= -3) weatherDescription = "мороз";
   else if (temp > -3 && temp <= 0) weatherDescription = "морозно";
@@ -207,56 +223,56 @@ void convertTemp2WeatherDescription() {
 /**
  * запрос погоды
  */
-void getWeatherData() {  
+void getWeatherData() {
   #ifdef DEBUG
     Serial.println("Connecting to the HTTP server....");
-  #endif 
+  #endif
   std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
   client->setInsecure();
   #ifdef DEBUG
     Serial.println("Building URL...");
-  #endif  
+  #endif
   std::stringstream apiURL; // создаем строчный потоковый класс
-  apiURL << server << "?lat=" << lat << "&lon=" << lon << "&fields=" << "temp"; // заполняем строчный потоковый класс данными   
+  apiURL << server << "?lat=" << lat << "&lon=" << lon << "&fields=" << "temp"; // заполняем строчный потоковый класс данными
   #ifdef DEBUG
     Serial.printf("API URL = %s\r\n", apiURL.str().c_str());
-  #endif  
-  if (http.begin(*client, apiURL.str().c_str())) {    
+  #endif
+  if (http.begin(*client, apiURL.str().c_str())) {
     #ifdef DEBUG
       Serial.println("Connected");
-    #endif    
+    #endif
     http.addHeader("Accept", "application/json"); // метод addHeader передает в качестве первого параметра имя заголовка
                                                   // и как второй параметр значение заголовка.
     http.addHeader("apikey", apiKey);
-    int code = http.GET();    
+    int code = http.GET();
     #ifdef DEBUG
       Serial.printf("HTTP Code [%d]", code);
-    #endif   
+    #endif
     if (code > 0) {
-      if (code == HTTP_CODE_OK || code == HTTP_CODE_MOVED_PERMANENTLY) {       
+      if (code == HTTP_CODE_OK || code == HTTP_CODE_MOVED_PERMANENTLY) {
         #ifdef DEBUG
           Serial.println(" GET OK");
-        #endif 
-        String payload = http.getString(); // ответ содержит данные JSON в результате вызова API        
+        #endif
+        String payload = http.getString(); // ответ содержит данные JSON в результате вызова API
         #ifdef DEBUG
           Serial.print("JSON: ");
           Serial.println(payload);
-        #endif       
+        #endif
         String i = parseJson(payload);
         temp = i.toFloat();
         tempStr = String(temp, 1);
         convertTemp2WeatherDescription();
-        getW = 1;        
+        getW = 1;
         #ifdef DEBUG
           Serial.print("Temperature = ");
           Serial.println(temp);
-        #endif       
-        apiURL.str(""); // очищаем буфер        
+        #endif
+        apiURL.str(""); // очищаем буфер
       }
     } else {
       #ifdef DEBUG
         Serial.printf("[HTTP] GET... failed, error: %s", http.errorToString(code).c_str());
-      #endif      
+      #endif
     }
   }
 }
@@ -268,15 +284,15 @@ void displayTime() {
   if (P.displayAnimate()) { // если анимация закончена
     P.setFont(_6bite_rus);
     Text.toCharArray(buf, 256);
-    P.displayText(buf, PA_CENTER, 10, 10, PA_PRINT, PA_NO_EFFECT);      
+    P.displayText(buf, PA_CENTER, 10, 10, PA_PRINT, PA_NO_EFFECT);
   }
 }
 
 /**
  * старт анимации времени
- */ 
+ */
 void displayTimeStart() {
-  if (P.displayAnimate()) { // если анимация закончена    
+  if (P.displayAnimate()) { // если анимация закончена
     P.setFont(_6bite_rus);
     Text.toCharArray(buf, 256);
     P.displayText(buf, PA_CENTER, catalog[rnd].speed, 50, catalog[rnd].effect, PA_NO_EFFECT);
@@ -284,11 +300,11 @@ void displayTimeStart() {
   }
 }
 
-/** 
+/**
  * завершение анимации времени
  */
 void displayTimeEnd() {
-  if (P.displayAnimate()) { // если анимация закончена    
+  if (P.displayAnimate()) { // если анимация закончена
     P.setFont(_6bite_rus);
     Text.toCharArray(buf, 256);
     P.displayText(buf, PA_CENTER, catalog[rnd].speed, 50, PA_PRINT, catalog[rnd].effect); // выводим завершение анимации
@@ -302,18 +318,18 @@ void displayTimeEnd() {
 void displayScroll() {
   if (P.displayAnimate()) { // если анимация закончена
     P.setFont(_5bite_rus);
-    Text.toCharArray(buf, 256);    
+    Text.toCharArray(buf, 256);
     P.displayScroll(buf, PA_LEFT, PA_SCROLL_LEFT, 30);
   }
 }
 
 /**
  * вывод бегущей строки в цикле
- */ 
+ */
 void displayScrollInCycle(int n) {
   if (P.displayAnimate()) { // если анимация закончена
     P.setFont(_5bite_rus);
-    Text.toCharArray(buf, 256);    
+    Text.toCharArray(buf, 256);
     P.displayScroll(buf, PA_LEFT, PA_SCROLL_LEFT, 30);
     if (!P.displayAnimate()) cntDispScrollAnimation = 2; cntTextScroll = n;
   }
@@ -333,19 +349,19 @@ void displayDotsTimeAnimation() {
 void getTime() {
   time_t now = time(nullptr);
   const struct tm * timeinfo = localtime(&now);
-  
+
   minute = timeinfo->tm_min;
   hour = timeinfo->tm_hour;
   second = timeinfo->tm_sec;
-  
+
   h = String (hour/10) + String (hour%10);
   m = String (minute/10) + String (minute%10);
   s = String (second/10 + String (second%10));
   md = String (timeinfo->tm_mday);
   y = String (timeinfo->tm_year + 1900);
-  
+
   switch(timeinfo->tm_mon) {  // месяц [ 0-январь - 11-декабрь ]
-    case 0: 
+    case 0:
       mon = "января"; break;
     case 1:
       mon = "февраля"; break;
@@ -373,7 +389,7 @@ void getTime() {
 
   switch(timeinfo->tm_wday) { // день недели [ 0-воскресенье - 6-суббота ]
     case 0:
-      wd = "воскресенье"; break;  
+      wd = "воскресенье"; break;
     case 1:
       wd = "понедельник"; break;
     case 2:
@@ -398,10 +414,10 @@ void getTime() {
  * =======================================================
  */
 void setup() {
- 
+
   Serial.begin(9600);
   while(!Serial) { // ждем подключения последовательного порта
-    ; 
+    ;
   }
   #ifdef DEBUG
     Serial.println("Booting");
@@ -449,26 +465,26 @@ void setup() {
     }
   });
   ArduinoOTA.begin();
-   
+
   /**
    * настройка анимации MD_Parola
    */
   P.begin();
   P.setInvert(false);
- 
+
   #ifdef DEBUG
     P.setIntensity(1);
-  #endif  
+  #endif
   #if ENA_SPRITE
     P.setSpriteData(pacman1, W_PMAN1, F_PMAN1, pacman2, W_PMAN2, F_PMAN2);
   #endif
   for (uint8_t i = 0; i < ARRAY_SIZE(catalog); i++) {
     catalog[i].speed *= P.getSpeed();
-  } 
+  }
 
   /**
    * вывод на экран IP адреса
-   */  
+   */
   Text = WiFi.localIP().toString();
   displayScroll();
 
@@ -509,8 +525,8 @@ void loop() {
 
   getTime(); // запрос времени
 
-  if (second > 0 && !(second % 35) && fStartScrollAnimation == 0) fStartScrollAnimation = 1;  //если таймер бегущей строки сработал 
-                                                                                              //и при этом флаг старта бегущей строки не установлен, 
+  if (second > 0 && !(second % 35) && fStartScrollAnimation == 0) fStartScrollAnimation = 1;  //если таймер бегущей строки сработал
+                                                                                              //и при этом флаг старта бегущей строки не установлен,
                                                                                               // устанавливаем его
   #ifndef DEBUG
     #ifdef Night_Bbrightness // включение ночного режима яркости
@@ -518,15 +534,15 @@ void loop() {
       else if (hour >= 6 && hour < 20) P.setIntensity (14);
       else if (hour >= 20 ) P.setIntensity(7);
     #endif
-  #endif 
+  #endif
   /**
    * смена экранов анимации:
    * флаг старта бегущей строки   1                             0
    * экран 0               завершение времени            индикация времени
    * экран 1                 бегущая строка              индикация времени
    * экран 2                  старт времени              индикация времени
-   * 
-   * текст бегущей строки чередуется по счетчику cntTextScroll 
+   *
+   * текст бегущей строки чередуется по счетчику cntTextScroll
    */
   if (cntDispScrollAnimation == 0 && fStartScrollAnimation) { // если флаг старта бегущей строки установлен
                                                               // и счетчик экранов анимации равен 0
@@ -537,21 +553,21 @@ void loop() {
   if (cntDispScrollAnimation == 1 && fStartScrollAnimation) { // если флаг старта бегущей строки установлен
                                                               // и счетчик экранов анимации равен 1
     if (cntTextScroll == 0) {                                 // при счетчике строк бегущей строки равном 0
-      Text = wd + " " + md + " " + mon;                           
-      displayScrollInCycle(1);                                // выводим первую бегущую строку 
+      Text = wd + " " + md + " " + mon;
+      displayScrollInCycle(1);                                // выводим первую бегущую строку
     }
     if (cntTextScroll == 1) {                                 // при счетчике строк бегущей строки равном 1
-      
-      Text = "на улице " + weatherDescription + " " + tempStr + "\x0f7" + "C";      
+
+      Text = "на улице " + weatherDescription + " " + tempStr + "\x0f7" + "C";
       displayScrollInCycle(0);                                // выводим вторую бегущую строку
                                                               // и т.д.
-    }         
-  } 
+    }
+  }
   if (cntDispScrollAnimation == 2 && fStartScrollAnimation) { // если флаг старта бегущей строки установлен
-                                                              // и счетчик экранов анимации равен 2                                                             
+                                                              // и счетчик экранов анимации равен 2
     displayDotsTimeAnimation();
     displayTimeStart();                                       // выводим анимацию старта экрана времени
-  }      
+  }
   if (!fStartScrollAnimation) {                               // если флаг старта бегущей строки не установлен
     displayDotsTimeAnimation();
     displayTime();                                            // выводим время
