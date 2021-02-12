@@ -172,7 +172,7 @@ HTTPClient http;  // создаем экземпляр класса HttpClient
 std::string server = "https://api.climacell.co/v3/weather/realtime";
 const float_t lat     = 45.862272; // ваши координаты
 const float_t lon     = 40.126453; // ваши координаты
-String apiKey  = "NLOXCpsbWaf689MVyFuKZSrBpNJBesm1";  // ваш apiKey
+String apiKey  = "";  // ваш apiKey
 float temp;
 String tempStr;
 String weatherDescription;
