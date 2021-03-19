@@ -163,9 +163,9 @@ MD_MAX72XX::fontType_t _6bite_rus[] PROGMEM = {
     6,   125, 125, 84,  84,  85,  69,            // 192 - Ё
     6,   56,  125, 84,  84,  93,  24,            // 193 - ё
     2,   98,   70,                               // 194 - for time dot 1
-    2,   38,   100,                              // 195 - for time dot 2
-    0,                                           // 196 - no used
-    0,                                           // 197 - no used
+    2,   100,  38,                               // 195 - for time dot 2
+    2,    38, 100,                               // 196 - for time dot 3
+    2,    70,  98,                               // 197 - for time dot 4
     0,                                           // 198 - no used
     0,                                           // 199 - no used
     0,                                           // 200 - no used
