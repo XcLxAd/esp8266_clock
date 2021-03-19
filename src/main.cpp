@@ -69,7 +69,9 @@
 /**
  * AutoConnect
  */
-AutoConnect Portal;
+ESP8266WebServer Server;
+AutoConnect Portal(Server);
+AutoConnectConfig Config;
 
 /**
  * настройка анимации
@@ -186,9 +188,9 @@ uint8_t minute;
  */
 HTTPClient http;  // создаем экземпляр класса HttpClient
 std::string server = "https://api.climacell.co/v3/weather/realtime";
-const float_t lat = 45.862272;  // ваши координаты
-const float_t lon = 40.126453;  // ваши координаты
-String apiKey = "";             // ваш apiKey
+const float_t lat     = 45.862272; // ваши координаты
+const float_t lon     = 40.126453; // ваши координаты
+String apiKey  = "";  // ваш apiKey
 float temp;
 String tempStr;
 String weatherDescription;
@@ -208,6 +210,15 @@ void displayTimeEnd(String);
 void displayScroll(String);
 void displayScrollInCycle(String, int);
 void displayDotsTimeAnimation();
+bool startCP(IPAddress&);
+
+bool startCP(IPAddress& softapIP) {
+  displayScroll("для настройки WiFi подключитесь к <esp8266ap> пароль 12345678");
+  #ifdef DEBUG
+    Serial.println("Captive portal started, SoftAP IP:" + softapIP.toString());
+  #endif
+  return true;
+}
 
 /**
  * преобразование ответа о погоде в данные
@@ -512,15 +523,8 @@ void setup() {
   Serial.println("Booting");
 #endif
 
-  /**
-   * настройка WIFI AutoConnect
-   */
-  // Server.on("/", rootPage);
-  if (Portal.begin()) {
-#ifdef DEBUG
-    Serial.println("WiFi connected: " + WiFi.localIP().toString());
-#endif
-  }
+
+
 
   /**
    * настройка Arduino OTA
@@ -571,9 +575,24 @@ void setup() {
   }
 
   /**
-   * вывод на экран IP адреса
+   * настройка WIFI AutoConnect
    */
-  displayScroll(WiFi.localIP().toString());
+
+  Config.principle = AC_PRINCIPLE_RSSI;
+  Config.portalTimeout = 60000;
+  Portal.config(Config);
+
+  Portal.onDetect(startCP);
+
+  if (Portal.begin()) {
+    /**
+     * вывод на экран IP адреса
+     */
+    displayScroll(WiFi.localIP().toString());
+  #ifdef DEBUG
+    Serial.println("WiFi connected: " + WiFi.localIP().toString());
+  #endif
+  }
 
   /**
    * настройка времени
@@ -581,14 +600,14 @@ void setup() {
   configTime(MYTZ, "time.nist.gov", "time.windows.com", "ru.pool.ntp.org");
   while (!sntp_enabled()) {
     Serial.print("-");
-    delay(100);
+    delay(200);
   }
 
   /**
    * однократный запрос данных о погоде
    */
   getWeatherData();
-  delay(100);
+  delay(200);
 }
 
 /**
@@ -597,7 +616,15 @@ void setup() {
  * =======================================================
  */
 void loop() {
-  Portal.handleClient();  // AutoConnect
+
+  //Server.handleClient();
+  Portal.handleClient();  // Need to handle AutoConnect menu.
+
+  if (WiFi.status() == WL_IDLE_STATUS) {
+    ESP.reset();
+    delay(1000);
+  }
+
   ArduinoOTA.handle();  // Arduino OTA
 
   if (!hour && !minute && !second) sntp_init();  // в полночь запрос времени
@@ -620,9 +647,9 @@ void loop() {
 #ifndef DEBUG
 #ifdef Night_Bbrightness  // включение ночного режима яркости
   if (hour < 6)
-    P.setIntensity(3);
+    P.setIntensity(2);
   else if (hour >= 6 && hour < 20)
-    P.setIntensity(14);
+    P.setIntensity(15);
   else if (hour >= 20)
     P.setIntensity(7);
 #endif
