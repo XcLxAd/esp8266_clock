@@ -72,6 +72,8 @@
 ESP8266WebServer Server;
 AutoConnect Portal(Server);
 AutoConnectConfig Config;
+const char* ssid = "Home_Network";
+const char* passphrase = "5VjK-8ePo-aysa-mkyr-567-bhd";
 
 /**
  * настройка анимации
@@ -580,11 +582,15 @@ void setup() {
 
   Config.principle = AC_PRINCIPLE_RSSI;
   Config.portalTimeout = 60000;
+  //Config.autoReconnect = true;
+
+
   Portal.config(Config);
+
 
   Portal.onDetect(startCP);
 
-  if (Portal.begin()) {
+  if (Portal.begin(ssid, passphrase)) {
     /**
      * вывод на экран IP адреса
      */
