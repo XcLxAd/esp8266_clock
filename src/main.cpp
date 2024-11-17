@@ -7,6 +7,8 @@
 #include <iostream>
 #include <sstream>
 
+#include <wifi.h> //локальная библиотека подключения к WiFi
+
 /**
  * подключение библиотек работы со временем
  */
@@ -60,10 +62,6 @@
 #define MAX7219_CS_PIN 0 // D3/GPIO 0
 // #define PHOTORESISTOR_PIN A0 // A0/ADC0 пин фоторезистора не используется
 
-#define WIFI_SSID "Home_Network"
-#define WIFI_PASS "5VjK-8ePo-aysa-mkyr-567-bhd"
-#define INT_LED LED_BUILTIN // пин встроенного светодиода
-byte tries = 20;
 /**
  * настройка анимации
  */
@@ -343,50 +341,6 @@ void displayScroll(String);
 void displayScrollInCycle(String, int);
 void displayDotsTimeAnimation();
 bool startCP(IPAddress &);
-void connectWiFi();
-void printWiFiStatus();
-
-void printWiFiStatus() // print Wifi status
-{
-  // print the SSID of the network you're attached to:
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
-  // print your WiFi shield's IP address:
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
-  // print the received signal strength:
-  long rssi = WiFi.RSSI();
-  Serial.print("Signal strength (RSSI): ");
-  Serial.print(rssi);
-  Serial.println(" dBm");
-}
-
-void connectWiFi()
-{
-  pinMode(INT_LED, OUTPUT); // инициализация пина с подключенным светодиодом
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  Serial.print("Connecting");
-  while (--tries && WiFi.status() != WL_CONNECTED)
-  {
-    digitalWrite(INT_LED, !digitalRead(INT_LED));
-    Serial.print(".");
-    delay(500);
-  }
-  if (WiFi.status() != WL_CONNECTED)
-  {
-    digitalWrite(INT_LED, HIGH);
-    Serial.println();
-    Serial.println("Non Connecting to WiFi.");
-  }
-  else
-  {
-    digitalWrite(INT_LED, LOW);
-    Serial.println();
-    Serial.println("WiFi connected.");
-    printWiFiStatus();
-  }
-}
 
 /**
  * преобразование ответа о погоде в данные
@@ -459,7 +413,7 @@ void getWeatherData()
         String payload = https.getString();
         Serial.print("JSON: ");
         Serial.println(payload);
-        //parseJson(payload);
+        // parseJson(payload);
         temp = parseJson(payload);
         convertTemp2WeatherDescription();
       }
@@ -684,23 +638,13 @@ void getTime()
   }
 }
 
-/**
- * =======================================================
- * SETUP * SETUP * SETUP * SETUP * SETUP * SETUP * SETUP *
- * =======================================================
- */
 void setup()
 {
+  // Открываем последовательный порт, устанавливаем скорость 115200 бит/c
   Serial.begin(115200);
-  while (!Serial)
-  {
-    ;
-  }
-  Serial.println("Booting");
+  Serial.println("Booting...");
 
-  /**
-   * настройка анимации MD_Parola
-   */
+  // Hастройка анимации MD_Parola
   P.begin();
   P.setInvert(false);
 
@@ -714,48 +658,42 @@ void setup()
   {
     catalog[i].speed *= P.getSpeed();
   }
-
+  // Подключение к WiFi
   connectWiFi();
 
-  /**
-   * настройка времени
-   */
-  configTime(MYTZ, "time.nist.gov", "time.windows.com", "ru.pool.ntp.org");
-  while (!sntp_enabled())
+  // Настройка времени
+  configTime(MYTZ, "192.168.1.1", "ru.pool.ntp.org");
+  Serial.println("Witing for NTP time sync:");
+  int i = 0;
+  time_t now = time(nullptr);
+  while (now < 1000000000)
   {
-    Serial.print("-");
-    delay(200);
+    now = time(nullptr);
+    i++;
+    if (i > 60)
+    {
+      Serial.println("");
+      Serial.println("Time sync failed!");
+    }
+    Serial.println(".");
+    delay(500);
   }
 
-  /**
-   * однократный запрос данных о погоде
-   */
+  // Эапрос данных о погоде
   getWeatherData();
-  delay(200);
 }
 
-/**
- * =======================================================
- * LOOP * LOOP * LOOP * LOOP * LOOP * LOOP * LOOP * LOOP *
- * =======================================================
- */
 void loop()
 {
-
-  if (!hour && !minute && !second)
-    sntp_init(); // в полночь запрос времени
-
+  getTime(); // запрос времени
   if (minute > 0 && !(minute % 19) && second == 20 &&
       getW == 0)
   { // 3 раза в час запрос погоды
     getWeatherData();
-    delay(100);
     getW = 1;
   }
   else
     getW = 0;
-
-  getTime(); // запрос времени
 
   if (second > 0 && !(second % 35) && fStartScrollAnimation == 0)
     fStartScrollAnimation =
