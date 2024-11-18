@@ -1,13 +1,16 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include <ESP8266HTTPClient.h>
-#include <ESP8266WiFi.h>
+//#include <ESP8266HTTPClient.h>
+//#include <ESP8266WiFi.h>
 
 #include <string.h>
 #include <iostream>
 #include <sstream>
 
+
+#include <variables.h>
 #include <wifi.h> //локальная библиотека подключения к WiFi
+#include <weather.h>
 
 /**
  * подключение библиотек работы со временем
@@ -319,10 +322,11 @@ uint8_t minute;
 /**
  * переменные для погоды
  */
-HTTPClient https; // создаем экземпляр класса HttpClient
-String regionID = "11002";
+//HTTPClient https; // создаем экземпляр класса HttpClient
+//String regionID = "11002";
 
-int temp;
+
+
 String tempStr;
 String weatherDescription;
 uint8_t getW = 0;
@@ -331,9 +335,8 @@ uint8_t getW = 0;
  * объявление пользовательских функций
  */
 void getTime();
-int parseJson(String);
-void convertTemp2WeatherDescription();
-void getWeatherData();
+
+
 void displayTime(String);
 void displayTimeStart(String);
 void displayTimeEnd(String);
@@ -341,90 +344,6 @@ void displayScroll(String);
 void displayScrollInCycle(String, int);
 void displayDotsTimeAnimation();
 bool startCP(IPAddress &);
-
-/**
- * преобразование ответа о погоде в данные
- */
-JsonDocument doc;
-int parseJson(String jsonDoc)
-{
-
-  Serial.println("Parsing JSON...");
-
-  deserializeJson(doc, jsonDoc);
-
-  unsigned long long time = doc["time"];
-  Serial.print("time: ");
-  Serial.println(time);
-  JsonObject clocks_ = doc["clocks"][regionID];
-  JsonObject clocks_weather_ = clocks_["weather"];
-  int temp_ = clocks_weather_["temp"];
-  Serial.print("temp: ");
-  Serial.println(temp_);
-  String icon = clocks_weather_["icon"];
-  Serial.print("icon: ");
-  Serial.println(icon);
-  int value = temp_;
-  return value;
-}
-
-void convertTemp2WeatherDescription()
-{
-  if (temp <= -8)
-    weatherDescription = "сильный мороз";
-  else if (temp > -8 && temp <= -3)
-    weatherDescription = "мороз";
-  else if (temp > -3 && temp <= 0)
-    weatherDescription = "морозно";
-  else if (temp > 0 && temp <= 12)
-    weatherDescription = "холодно";
-  else if (temp > 12 && temp <= 18)
-    weatherDescription = "прохладно";
-  else if (temp > 18 && temp <= 26)
-    weatherDescription = "комфортно";
-  else if (temp > 26 && temp <= 32)
-    weatherDescription = "жарко";
-  else if (temp > 32)
-    weatherDescription = "очень жарко";
-}
-
-/**
- * запрос погоды
- */
-void getWeatherData()
-{
-  Serial.println("Connecting to the HTTPS server....");
-  auto client = std::make_unique<BearSSL::WiFiClientSecure>();
-  client->setInsecure();
-  String serverPath = "https://yandex.com/time/sync.json?geo=" + regionID;
-  Serial.print("HTTPS URL = ");
-  Serial.println(serverPath);
-  if (https.begin(*client, serverPath))
-  {
-    Serial.println("[HTTPS] GET...");
-    int code = https.GET();
-    if (code > 0)
-    {
-      if (code == HTTP_CODE_OK || code == HTTP_CODE_MOVED_PERMANENTLY)
-      {
-        Serial.print("GET OK.");
-        Serial.printf(" HTTP Code [%d]", code);
-        Serial.println();
-        String payload = https.getString();
-        Serial.print("JSON: ");
-        Serial.println(payload);
-        // parseJson(payload);
-        temp = parseJson(payload);
-        convertTemp2WeatherDescription();
-      }
-    }
-    else
-    {
-      Serial.printf("[HTTP] GET failed, error: %s", https.errorToString(code).c_str());
-      https.end();
-    }
-  }
-}
 
 /**
  * индикация времени
@@ -738,9 +657,7 @@ void loop()
     }
     if (cntTextScroll == 1)
     { // при счетчике строк бегущей строки равном 1
-      displayScrollInCycle(
-          ("на улице " + weatherDescription + " " + temp + "\x0f7" + "C"),
-          0); // выводим вторую бегущую строку
+      displayScrollInCycle((global::temp),0); // выводим вторую бегущую строку
               // и т.д.
     }
   }
