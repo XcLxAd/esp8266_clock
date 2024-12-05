@@ -1,12 +1,17 @@
 #include <weather.h>
 
-String regionID = "8176";
 WiFiClient client;
 HTTPClient http;
 
 XMLDocument xmlDocument;
 
-String parseXML(String xmlDoc)
+Weather::Weather(String region_id)
+{
+    regionID = region_id;
+    WeatherData = "";
+}
+
+String Weather::parseXML(String xmlDoc)
 {
     Serial.println("Parsing XML...");
     const char *msg = xmlDoc.c_str();
@@ -14,7 +19,7 @@ String parseXML(String xmlDoc)
     if (xmlDocument.Parse(msg) != XML_SUCCESS)
     {
         Serial.println("Error parsing");
-        //return;
+        return "";
     };
     XMLElement *pRoot = xmlDocument.FirstChildElement("feed");
     XMLElement *pElement_0 = pRoot->FirstChildElement("entry");
@@ -25,17 +30,26 @@ String parseXML(String xmlDoc)
     pData_1 = pElement_1->GetText();
     Serial.print("Check block_1...");
     XMLCheckResult(pData_1);
+    Serial.println(pData_1);
     pData_2 = pElement_2->GetText();
     Serial.print("Check block_2...");
     XMLCheckResult(pData_2);
-    Serial.print(pData_1);
     Serial.println(pData_2);
     Serial.println("Parsing OK!");
-    String output = output + pData_1 + pData_2;
-    return output;
+    String s1 = pData_1;
+    s1.replace("на метеостанции", "снаружи");
+    s1.replace("°", "\x0f7");
+    String s2 = pData_2;
+    int index = s2.indexOf('.');
+    s2.remove(0, index);
+    s2.replace("°", "\x0f7");
+    s1 += s2;
+    Serial.println("Строки после обработки:");
+    Serial.println(s1);
+    return s1;
 }
 
-void getWeatherData()
+void Weather::getWeatherData()
 {
     Serial.println("Connecting to the HTTP server....");
     String serverPath = "http://rp5.ru/rss/" + regionID + "/ru";
@@ -55,7 +69,7 @@ void getWeatherData()
                 String payload = http.getString();
                 // Serial.print("XML: "); // uncomment for debugging
                 // Serial.println(payload); // uncomment for debugging
-                global::temp = parseXML(payload);
+                WeatherData = (parseXML(payload));
             }
         }
         else

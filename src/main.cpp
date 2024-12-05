@@ -1,55 +1,22 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
-//#include <ESP8266HTTPClient.h>
-//#include <ESP8266WiFi.h>
 
-#include <string.h>
-#include <iostream>
-#include <sstream>
-
-
-#include <variables.h>
 #include <wifi.h> //локальная библиотека подключения к WiFi
 #include <weather.h>
+#include <m_time.h>
 
-/**
- * подключение библиотек работы со временем
- */
-#include <TZ.h>
-#include <sntp.h>
-#include <time.h>
+// установка временной зоны
+#define MYTZ TZ_Europe_Moscow
+Realtime rt;
 
-/**
- * подключение библиотек работы с матрицей и эффектов
- */
+#define REGID "8176"
+Weather Wh(REGID);
+
+// подключение библиотек работы с матрицей и эффектов
 #include "MD_MAX72xx.h"
 #include "MD_Parola.h"
 
-/**
- * подключение шрифтов
- */
-#include "5bite_rus.h"
-#include "6bite_rus.h"
-/**
- * включение режима отладки
- */
-// #define DEBUG
-
-/**
- * включение ночного режима
- */
-#define Night_Bbrightness
-
-/**
- * установка временной зоны
- */
-#define MYTZ TZ_Europe_Moscow
-
-/**
- * установки индикации
- */
-#define MAX_DEVICES 4                     // количество матриц
-#define HARDWARE_TYPE MD_MAX72XX::FC16_HW // используются матрицы типа FC-16
+// Индикация
 /** подключение пинов Wemos D1 mini
  +----------------------+---------------+
  | DEVISES              | Wemos D1 mini |
@@ -62,14 +29,24 @@
  | +3,3V - resistor 10k | A0/ADC0       |
  +----------------------+---------------+
 */
-#define MAX7219_CS_PIN 0 // D3/GPIO 0
+#define MAX_DEVICES 4                     // количество матриц
+#define HARDWARE_TYPE MD_MAX72XX::FC16_HW // используются матрицы типа FC-16
+#define CS_PIN 0                          // D3/GPIO 0
+
 // #define PHOTORESISTOR_PIN A0 // A0/ADC0 пин фоторезистора не используется
 
-/**
- * настройка анимации
- */
-MD_Parola P = MD_Parola(HARDWARE_TYPE, MAX7219_CS_PIN,
-                        MAX_DEVICES); // выбор интерфейса SPI
+// подключение шрифтов
+#include "5bite_rus.h"
+#include "6bite_rus.h"
+
+// режима отладки
+// #define DEBUG
+
+// включение ночного режима
+#define Night_Bbrightness
+
+// настройка анимации
+MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES); // выбор интерфейса SPI
 
 struct sCatalog
 {
@@ -304,38 +281,11 @@ int cntTextScroll = 0;
 int cntDotAnimation = 0;
 bool fStartScrollAnimation = 0; // флаг старта бегущей строки НЕ активен
 unsigned long timer;
-
-/**
- * переменные для времени
- */
-String y;   // год
-String mon; // месяц
-String wd;  // день недели
-String md;  // день месяца
-String h;   // часы
-String m;   // минуты
-String s;   // секунды
-uint8_t second;
-uint8_t hour;
-uint8_t minute;
-
-/**
- * переменные для погоды
- */
-//HTTPClient https; // создаем экземпляр класса HttpClient
-//String regionID = "11002";
-
-
-
-String tempStr;
-String weatherDescription;
 uint8_t getW = 0;
 
 /**
  * объявление пользовательских функций
  */
-void getTime();
-
 
 void displayTime(String);
 void displayTimeStart(String);
@@ -431,129 +381,45 @@ void displayDotsTimeAnimation()
     switch (cntDotAnimation)
     { //
     case 0:
-      printTime = h + "\x0c2" + m;
+      printTime = rt.h + "\x0c2" + rt.m;
       break;
     case 1:
-      printTime = h + "\x03a" + m;
+      printTime = rt.h + "\x03a" + rt.m;
       break;
     case 2:
-      printTime = h + "\x03a" + m;
+      printTime = rt.h + "\x03a" + rt.m;
       break;
     case 3:
-      printTime = h + "\x0c3" + m;
+      printTime = rt.h + "\x0c3" + rt.m;
       break;
     case 4:
-      printTime = h + "\x03a" + m;
+      printTime = rt.h + "\x03a" + rt.m;
       break;
     case 5:
-      printTime = h + "\x03a" + m;
+      printTime = rt.h + "\x03a" + rt.m;
       break;
     case 6:
-      printTime = h + "\x0c4" + m;
+      printTime = rt.h + "\x0c4" + rt.m;
       break;
     case 7:
-      printTime = h + "\x03a" + m;
+      printTime = rt.h + "\x03a" + rt.m;
       break;
     case 8:
-      printTime = h + "\x03a" + m;
+      printTime = rt.h + "\x03a" + rt.m;
       break;
     case 9:
-      printTime = h + "\x0c5" + m;
+      printTime = rt.h + "\x0c5" + rt.m;
       break;
     case 10:
-      printTime = h + "\x03a" + m;
+      printTime = rt.h + "\x03a" + rt.m;
       break;
     case 11:
-      printTime = h + "\x03a" + m;
+      printTime = rt.h + "\x03a" + rt.m;
       break;
     }
     cntDotAnimation++;
     if (cntDotAnimation > 11)
       cntDotAnimation = 0;
-  }
-}
-
-/**
- * запрос времени
- */
-void getTime()
-{
-  time_t now = time(nullptr);
-  const struct tm *timeinfo = localtime(&now);
-
-  minute = timeinfo->tm_min;
-  hour = timeinfo->tm_hour;
-  second = timeinfo->tm_sec;
-
-  h = String(hour / 10) + String(hour % 10);
-  m = String(minute / 10) + String(minute % 10);
-  s = String(second / 10 + String(second % 10));
-  md = String(timeinfo->tm_mday);
-  y = String(timeinfo->tm_year + 1900);
-
-  switch (timeinfo->tm_mon)
-  { // месяц [ 0-январь - 11-декабрь ]
-  case 0:
-    mon = "января";
-    break;
-  case 1:
-    mon = "февраля";
-    break;
-  case 2:
-    mon = "марта";
-    break;
-  case 3:
-    mon = "апреля";
-    break;
-  case 4:
-    mon = "мая";
-    break;
-  case 5:
-    mon = "июня";
-    break;
-  case 6:
-    mon = "июля";
-    break;
-  case 7:
-    mon = "августа";
-    break;
-  case 8:
-    mon = "сентября";
-    break;
-  case 9:
-    mon = "октября";
-    break;
-  case 10:
-    mon = "ноября";
-    break;
-  case 11:
-    mon = "декабря";
-    break;
-  }
-
-  switch (timeinfo->tm_wday)
-  { // день недели [ 0-воскресенье - 6-суббота ]
-  case 0:
-    wd = "воскресенье";
-    break;
-  case 1:
-    wd = "понедельник";
-    break;
-  case 2:
-    wd = "вторник";
-    break;
-  case 3:
-    wd = "среда";
-    break;
-  case 4:
-    wd = "четверг";
-    break;
-  case 5:
-    wd = "пятница";
-    break;
-  case 6:
-    wd = "суббота";
-    break;
   }
 }
 
@@ -578,7 +444,9 @@ void setup()
     catalog[i].speed *= P.getSpeed();
   }
   // Подключение к WiFi
+  // displayScroll("Подключение к WiFi...");
   connectWiFi();
+  displayScroll(WiFi.localIP().toString());
 
   // Настройка времени
   configTime(MYTZ, "192.168.1.1", "ru.pool.ntp.org");
@@ -599,33 +467,33 @@ void setup()
   }
 
   // Эапрос данных о погоде
-  getWeatherData();
+  Wh.getWeatherData();
 }
 
 void loop()
 {
-  getTime(); // запрос времени
-  if (minute > 0 && !(minute % 19) && second == 20 &&
+  rt.getTime(); // запрос времени
+  if (rt.minute > 0 && !(rt.minute % 19) && rt.second == 40 &&
       getW == 0)
   { // 3 раза в час запрос погоды
-    getWeatherData();
+    Wh.getWeatherData();
     getW = 1;
   }
   else
     getW = 0;
 
-  if (second > 0 && !(second % 35) && fStartScrollAnimation == 0)
+  if (rt.second > 0 && !(rt.second % 35) && fStartScrollAnimation == 0)
     fStartScrollAnimation =
         1; // если таймер бегущей строки сработал
            // и при этом флаг старта бегущей строки не установлен,
            //  устанавливаем его
 #ifndef DEBUG
 #ifdef Night_Bbrightness // включение ночного режима яркости
-  if (hour < 6)
+  if (rt.hour < 6)
     P.setIntensity(2);
-  else if (hour >= 6 && hour < 20)
+  else if (rt.hour >= 6 && rt.hour < 20)
     P.setIntensity(15);
-  else if (hour >= 20)
+  else if (rt.hour >= 20)
     P.setIntensity(7);
 #endif
 #endif
@@ -652,13 +520,13 @@ void loop()
     // и счетчик экранов анимации равен 1
     if (cntTextScroll == 0)
     { // при счетчике строк бегущей строки равном 0
-      displayScrollInCycle((wd + " " + md + " " + mon),
+      displayScrollInCycle((rt.wd + " " + rt.md + " " + rt.mon),
                            1); // выводим первую бегущую строку
     }
     if (cntTextScroll == 1)
-    { // при счетчике строк бегущей строки равном 1
-      displayScrollInCycle((global::temp),0); // выводим вторую бегущую строку
-              // и т.д.
+    {                                             // при счетчике строк бегущей строки равном 1
+      displayScrollInCycle((Wh.WeatherData), 0); // выводим вторую бегущую строку
+                                                  // и т.д.
     }
   }
   if (cntDispScrollAnimation == 2 &&

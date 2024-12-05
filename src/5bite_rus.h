@@ -1,6 +1,7 @@
 #pragma once
 MD_MAX72XX::fontType_t _5bite_rus[] PROGMEM = {
-  'F',    1,   0, 255,   8,   0,  // 0 - Empty Cell
+  //'F',    1,   0, 255,   8,   0,  // 0 - Empty Cell
+    0, // 0
     5,   62,  91,  79,  91,  62,  // 1 - Sad Smiley
     5,   62,  107, 79,  107, 62,  // 2 - Happy Smiley
     5,   28,  62,  124, 62,  28,  // 3 - Heart
