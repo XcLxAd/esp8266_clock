@@ -21,10 +21,11 @@ class Weather
 {
 private:
   String regionID;
-  String parseXML(String);
+  void parseXML(String);
 
 public:
+  String weatherCurrent;
+  String weatherForecast;
   Weather(String);
-  String WeatherData;
   void getWeatherData();
 };

@@ -381,40 +381,40 @@ void displayDotsTimeAnimation()
     switch (cntDotAnimation)
     { //
     case 0:
-      printTime = rt.h + "\x0c2" + rt.m;
+      printTime = rt.str_hour + "\x0c2" + rt.str_min;
       break;
     case 1:
-      printTime = rt.h + "\x03a" + rt.m;
+      printTime = rt.str_hour + "\x03a" + rt.str_min;
       break;
     case 2:
-      printTime = rt.h + "\x03a" + rt.m;
+      printTime = rt.str_hour + "\x03a" + rt.str_min;
       break;
     case 3:
-      printTime = rt.h + "\x0c3" + rt.m;
+      printTime = rt.str_hour + "\x0c3" + rt.str_min;
       break;
     case 4:
-      printTime = rt.h + "\x03a" + rt.m;
+      printTime = rt.str_hour + "\x03a" + rt.str_min;
       break;
     case 5:
-      printTime = rt.h + "\x03a" + rt.m;
+      printTime = rt.str_hour + "\x03a" + rt.str_min;
       break;
     case 6:
-      printTime = rt.h + "\x0c4" + rt.m;
+      printTime = rt.str_hour + "\x0c4" + rt.str_min;
       break;
     case 7:
-      printTime = rt.h + "\x03a" + rt.m;
+      printTime = rt.str_hour + "\x03a" + rt.str_min;
       break;
     case 8:
-      printTime = rt.h + "\x03a" + rt.m;
+      printTime = rt.str_hour + "\x03a" + rt.str_min;
       break;
     case 9:
-      printTime = rt.h + "\x0c5" + rt.m;
+      printTime = rt.str_hour + "\x0c5" + rt.str_min;
       break;
     case 10:
-      printTime = rt.h + "\x03a" + rt.m;
+      printTime = rt.str_hour + "\x03a" + rt.str_min;
       break;
     case 11:
-      printTime = rt.h + "\x03a" + rt.m;
+      printTime = rt.str_hour + "\x03a" + rt.str_min;
       break;
     }
     cntDotAnimation++;
@@ -443,37 +443,19 @@ void setup()
   {
     catalog[i].speed *= P.getSpeed();
   }
-  // Подключение к WiFi
-  // displayScroll("Подключение к WiFi...");
-  connectWiFi();
+
+  connectWiFi(); // Подключение к WiFi
   displayScroll(WiFi.localIP().toString());
 
-  // Настройка времени
   configTime(MYTZ, "192.168.1.1", "ru.pool.ntp.org");
-  Serial.println("Witing for NTP time sync:");
-  int i = 0;
-  time_t now = time(nullptr);
-  while (now < 1000000000)
-  {
-    now = time(nullptr);
-    i++;
-    if (i > 60)
-    {
-      Serial.println("");
-      Serial.println("Time sync failed!");
-    }
-    Serial.println(".");
-    delay(500);
-  }
 
-  // Эапрос данных о погоде
-  Wh.getWeatherData();
+  Wh.getWeatherData(); // Эапрос данных о погоде
 }
 
 void loop()
 {
   rt.getTime(); // запрос времени
-  if (rt.minute > 0 && !(rt.minute % 19) && rt.second == 40 &&
+  if (rt.int_min > 0 && !(rt.int_min % 19) && rt.int_sec == 40 &&
       getW == 0)
   { // 3 раза в час запрос погоды
     Wh.getWeatherData();
@@ -482,18 +464,18 @@ void loop()
   else
     getW = 0;
 
-  if (rt.second > 0 && !(rt.second % 35) && fStartScrollAnimation == 0)
+  if (rt.int_sec > 0 && !(rt.int_sec % 35) && fStartScrollAnimation == 0)
     fStartScrollAnimation =
         1; // если таймер бегущей строки сработал
            // и при этом флаг старта бегущей строки не установлен,
            //  устанавливаем его
 #ifndef DEBUG
 #ifdef Night_Bbrightness // включение ночного режима яркости
-  if (rt.hour < 6)
+  if (rt.int_hour < 6)
     P.setIntensity(2);
-  else if (rt.hour >= 6 && rt.hour < 20)
+  else if (rt.int_hour >= 6 && rt.int_hour < 20)
     P.setIntensity(15);
-  else if (rt.hour >= 20)
+  else if (rt.int_hour >= 20)
     P.setIntensity(7);
 #endif
 #endif
@@ -520,13 +502,13 @@ void loop()
     // и счетчик экранов анимации равен 1
     if (cntTextScroll == 0)
     { // при счетчике строк бегущей строки равном 0
-      displayScrollInCycle((rt.wd + " " + rt.md + " " + rt.mon),
+      displayScrollInCycle((rt.str_wday + " " + rt.str_mday + " " + rt.str_mon),
                            1); // выводим первую бегущую строку
     }
     if (cntTextScroll == 1)
-    {                                             // при счетчике строк бегущей строки равном 1
-      displayScrollInCycle((Wh.WeatherData), 0); // выводим вторую бегущую строку
-                                                  // и т.д.
+    {                                            // при счетчике строк бегущей строки равном 1
+      displayScrollInCycle((Wh.weatherCurrent + Wh.weatherForecast), 0); // выводим вторую бегущую строку
+                                                 // и т.д.
     }
   }
   if (cntDispScrollAnimation == 2 &&

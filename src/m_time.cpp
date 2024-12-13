@@ -2,36 +2,41 @@
 
 void Realtime::getTime()
 {
+    const char *_mounthOfTheYear[] =
+        {
+            "января",
+            "февраля",
+            "марта",
+            "апреля",
+            "мая",
+            "июня",
+            "июля",
+            "августа",
+            "сентября",
+            "октября",
+            "ноября",
+            "декабря"};
+
+    const char *_dayOfTheWeek[] =
+        {
+            "Воскресенье",
+            "Понедельник",
+            "Вторник",
+            "Среда",
+            "Четверг",
+            "Пятница",
+            "Суббота"};
+            
     time_t now = time(nullptr);
     timeinfo = localtime(&now);
-    hour = timeinfo->tm_hour;
-    minute = timeinfo->tm_min;
-    second = timeinfo->tm_sec;
-    y = String(timeinfo->tm_year + 1900);
-    md = String(timeinfo->tm_mday);
-    h = String(timeinfo->tm_hour / 10) + String(timeinfo->tm_hour % 10);
-    m = String(timeinfo->tm_min / 10) + String(timeinfo->tm_min % 10);
-    s = String(timeinfo->tm_sec / 10) + String(timeinfo->tm_sec % 10);
-    mon = mounth(timeinfo->tm_mon);
-    wd = dayOfTheWeek(timeinfo->tm_wday);
-}
-
-String Realtime::mounth(int var)
-{
-    u8_t i{11};
-    while (i > var)
-    {
-        i--;
-    }
-    return _mounth[i];
-}
-
-String Realtime::dayOfTheWeek(int var)
-{
-    u8_t i{6};
-    while (i > var)
-    {
-        i--;
-    }
-    return _dayOfTheWeek[i];
+    int_hour = timeinfo->tm_hour;
+    int_min = timeinfo->tm_min;
+    int_sec = timeinfo->tm_sec;
+    str_year = String(timeinfo->tm_year + 1900);
+    str_mon = _mounthOfTheYear[timeinfo->tm_mon];
+    str_mday = timeinfo->tm_mday;
+    str_wday = _dayOfTheWeek[timeinfo->tm_wday];
+    str_hour = String(timeinfo->tm_hour / 10) + String(timeinfo->tm_hour % 10);
+    str_min = String(timeinfo->tm_min / 10) + String(timeinfo->tm_min % 10);
+    str_sec = String(timeinfo->tm_sec / 10) + String(timeinfo->tm_sec % 10);
 }

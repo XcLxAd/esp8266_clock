@@ -8,10 +8,11 @@ XMLDocument xmlDocument;
 Weather::Weather(String region_id)
 {
     regionID = region_id;
-    WeatherData = "";
+    weatherCurrent = "";
+    weatherForecast = "";
 }
 
-String Weather::parseXML(String xmlDoc)
+void Weather::parseXML(String xmlDoc)
 {
     Serial.println("Parsing XML...");
     const char *msg = xmlDoc.c_str();
@@ -19,7 +20,7 @@ String Weather::parseXML(String xmlDoc)
     if (xmlDocument.Parse(msg) != XML_SUCCESS)
     {
         Serial.println("Error parsing");
-        return "";
+        // return 0;
     };
     XMLElement *pRoot = xmlDocument.FirstChildElement("feed");
     XMLElement *pElement_0 = pRoot->FirstChildElement("entry");
@@ -37,16 +38,18 @@ String Weather::parseXML(String xmlDoc)
     Serial.println(pData_2);
     Serial.println("Parsing OK!");
     String s1 = pData_1;
-    s1.replace("на метеостанции", "снаружи");
+    s1.replace("на метеостанции было", "температура воздуха");
     s1.replace("°", "\x0f7");
     String s2 = pData_2;
-    int index = s2.indexOf('.');
-    s2.remove(0, index);
+    int index = s2.lastIndexOf('.');
+    int index2 = s2.lastIndexOf('.', index - 1);
+    s2.remove(0, index2);
     s2.replace("°", "\x0f7");
-    s1 += s2;
+    weatherCurrent = s1;
+    weatherForecast = s2;
     Serial.println("Строки после обработки:");
-    Serial.println(s1);
-    return s1;
+    Serial.print(weatherCurrent);
+    Serial.println(weatherForecast);
 }
 
 void Weather::getWeatherData()
@@ -69,7 +72,7 @@ void Weather::getWeatherData()
                 String payload = http.getString();
                 // Serial.print("XML: "); // uncomment for debugging
                 // Serial.println(payload); // uncomment for debugging
-                WeatherData = (parseXML(payload));
+                parseXML(payload);
             }
         }
         else

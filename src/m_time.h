@@ -13,46 +13,19 @@
 class Realtime
 {
 private:
-    const char *_mounth[12] =
-        {
-            "января",
-            "февраля",
-            "марта",
-            "апреля",
-            "мая",
-            "июня",
-            "июля",
-            "августа",
-            "сентября",
-            "октября",
-            "ноября",
-            "декабря"};
-            
-    const char *_dayOfTheWeek[7] =
-        {
-            "Воскресенье",
-            "Понедельник",
-            "Вторник",
-            "Среда",
-            "Четверг",
-            "Пятница",
-            "Суббота"};
-
-    String mounth(int);
-    String dayOfTheWeek(int);
-    const struct tm *timeinfo;
+    struct tm *timeinfo;
 
 public:
-    int second;
-    int hour;
-    int minute;
-    String y;   // год
-    String mon; // месяц
-    String wd;  // день недели
-    String md;  // день месяца
-    String h;   // часы
-    String m;   // минуты
-    String s;   // секунды
+    int int_sec;
+    int int_hour;
+    int int_min;
+    String str_year; // год
+    String str_mon;  // месяц года
+    String str_wday; // день недели
+    String str_mday; // день месяца
+    String str_hour; // часы
+    String str_min;  // минуты
+    String str_sec;  // секунды
 
     void getTime();
 };
